@@ -1,44 +1,148 @@
 
-# Hardware Implementation of SHA-256 for Secure Hashing on FPGA
+# **Hardware Implementation of SHA-256 for Secure Hashing on FPGA**
 
 This project demonstrates the hardware implementation of the SHA-256 cryptographic hashing algorithm using Verilog on the Altera DE2 FPGA board (Cyclone II). The design processes a string input, computes the corresponding 256-bit hash value using the SHA-256 algorithm, and outputs the result in real-time.
-
-
-## Modules Description
+## **Modules Description**
 
 ### Core Functional Modules
 
 - **decoder_mapping.v**
-- The `decoder_mapping` module takes a 6-bit input (`data_in`) and maps it to an 8-bit ASCII character output (`ascii_out`). This module is useful for translating 6-bit input data into readable characters for further processing or display.
+    - The `decoder_mapping` module maps a 6-bit input (`data_in`) to an 8-bit ASCII character output (`ascii_out`), which translates input data into readable characters for further processing.
 
 - **sha_256_constants.v**
-- The `sha_256_constants` module outputs a 32-bit constant (`K`) based on a 7-bit input index (0 to 63). Each index corresponds to a specific constant used in the SHA-256 algorithm's rounds. These constants are essential for the hash computation. If the index is invalid, the module outputs `32'h00000000`.
+    - The `sha_256_constants` module provides a 32-bit constant (`K`) for each of the 64 rounds in the SHA-256 algorithm, based on a 7-bit input index (0 to 63). These constants are critical for the hash computation process.
 
 - **sha_256_functions.v**
-- The sha_256_functions module computes four key SHA-256 operations:
-    - **Ch** (Choice): `(x & y) ^ (~x & z)`
-    - **Maj** (Majority): `(x & y) ^ (y & z) ^ (z & x)`
-    - **sigma0**: A transformation of `x` using bit rotations and XOR.
-    - **sigma1**: Another transformation of `x` with different bit rotations and XOR.
-
-- These operations are used in the hash calculation process.
-
+    - The `sha_256_functions` module computes the core SHA-256 operations: 
+        - **Ch** (Choice): `(x & y) ^ (~x & z)`
+        - **Maj** (Majority): `(x & y) ^ (y & z) ^ (z & x)`
+        - **sigma0** and **sigma1**: Transformations of `x` using bit rotations and XOR.
 
 - **seven_segment_display_driver.v**
-- The `seven_segment_display_driver` module drives a 7-segment display based on a 4-bit value (0-15) and a `rounds_done` signal. If `rounds_done` is 1, it displays the corresponding value (0-9, A-F) on the display; if 0, it turns off the display. The segment mappings are predefined for each digit and letter.
+    - The `seven_segment_display_driver` module controls a 7-segment display, showing the hash value (0-9, A-F) corresponding to a 4-bit input, based on the `rounds_done` signal. If `rounds_done` is 0, it turns off the display.
 
 ### System and Process Integration Modules
 
 - **decoder_input.v**
-
-- This Verilog module `decoder_input` handles the input data for a cryptographic process by decoding a 6-bit data stream into ASCII characters and padding it to a 512-bit message. It uses a finite state machine (FSM) with three states: **IDLE**, **PROCESSING**, and **COMPLETE**. In the PROCESSING state, it decodes and stores the input data, while in the COMPLETE state, it adds necessary padding (1-bit and zeros) and appends the message length as the last 64 bits. The final padded message is output as `padded_msg`, and the `done` signal indicates completion.
+    - This module decodes the 6-bit input data and pads it to a 512-bit message. It uses a finite state machine (FSM) to manage states: **IDLE**, **PROCESSING**, and **COMPLETE**. It adds padding and appends the message length as the last 64 bits, outputting the final padded message as `padded_msg`.
 
 - **sha_256_message_scheduler.v**
-- The `sha_256_message_scheduler` module processes a 512-bit input block to generate 64 32-bit words (`W_temp`) for SHA-256. It initializes the first 16 words from the input and computes the remaining words using SHA-256's message expansion formula. It outputs one 32-bit word (`W`) at a time and tracks the round with a counter.
+    - The `sha_256_message_scheduler` module generates the 64 words for SHA-256 by processing a 512-bit input block. The first 16 words are initialized from the input, and the remaining words are computed using the SHA-256 expansion formula.
 
 - **sha_256_round.v**
-- The `sha_256_round` module implements the core SHA-256 round logic. It processes a 512-bit input message block across 64 rounds, updating the hash state variables (`a`, `b`, `c`, `d`, `e`, `f`, `g`, `h`) at each round. The module uses a message scheduler to generate the message schedule words (`Wt`), and constants and functions modules for the necessary SHA-256 operations (like Ch, Maj, sigma). 
-- It uses a finite state machine (FSM) with four states: **IDLE**, **ROUNDS**, **FINAL**, and **HOLD**.  In the IDLE state, it waits for the `done` signal to start the round operations. Once triggered, it moves to the ROUNDS state, where it performs 64 rounds of SHA-256 calculations. After completing the rounds, the module enters the FINAL state, where it finalizes the hash and sets the `rounds_done` signal to indicate completion. Finally, in the HOLD state, the module holds the final computed hash, marking the end of the process. The output is the 256-bit SHA-256 hash.
+    - This module executes the 64 rounds of SHA-256, updating the hash state variables (`a`, `b`, `c`, `d`, `e`, `f`, `g`, `h`) with each round. It uses the message scheduler, constants, and function modules to perform these calculations and outputs the final 256-bit hash after completing the rounds.
 
 - **sha_256.v**
-- The sha_256 module integrates the entire SHA-256 hashing process, including input padding, hash computation, and display of the final hash. It first uses the `decoder_input` module to pad the input message and signals when padding is complete. The `sha_256_round` module processes the padded message and performs the SHA-256 rounds to compute the 256-bit hash. Finally, the `seven_segment_display_driver` module display each 4-bit chunk of the hash on seven 7-segment displays, updating once the rounds are finished. The module demonstrates the flow of data from input to display based on the `input_start`, `input_complete`, and `rounds_done` signals.
+    - The `sha_256` module integrates the entire SHA-256 hashing process: from input padding (using `decoder_input`) to the final hash computation and display. The `sha_256_round` module processes the padded message, and the hash is displayed using the `seven_segment_display_driver` once the rounds are complete.
+
+
+## **Step-by-Step Implementation**
+
+### 1. Input Decoding
+**Module: `decoder_input`**  
+- Processes a string input, decodes it into ASCII characters, and pads it to a 512-bit block.  
+- Uses a finite state machine (FSM) with the following states:
+  - **IDLE:** Waits for the input signal.
+  - **PROCESSING:** Decodes and accumulates input data.
+  - **COMPLETE:** Pads the message and appends the message length in the last 64 bits.  
+- **Output:** A fully padded 512-bit message block (`padded_msg`).
+
+
+
+### 2. ASCII Character Mapping
+**Module: `decoder_mapping`**  
+- Maps 6-bit encoded input to corresponding 8-bit ASCII characters.  
+- **Input:** 6-bit binary data.  
+- **Output:** ASCII character in 8-bit format.  
+
+
+
+### 3. Message Scheduling
+**Module: `sha_256_message_scheduler`**  
+- Expands the 512-bit message block into 64 32-bit words for SHA-256.  
+- **Process:**
+  - Initializes the first 16 words (`W[0]` to `W[15]`) from the input block.
+  - Computes the remaining 48 words using using SHA-256's message expansion formula 
+- **Output:** One 32-bit word at a time (`W_temp`).
+
+
+
+### 4. Round Computation
+**Module: `sha_256_round`**  
+- Performs 64 rounds of the SHA-256 algorithm, updating hash state variables (`a` to `h`).  
+- Uses constants, logical functions, and message scheduler words.  
+- **Finite State Machine (FSM):**
+  - **IDLE:** Waits for signal to start computation.
+  - **ROUNDS:** Executes 64 iterative computations.
+  - **FINAL:** Outputs the final 256-bit hash.  
+- **Output:** 256-bit hash value.
+
+
+
+### 5. Constant Generation
+**Module: `sha_256_constants`**  
+- Supplies pre-defined 32-bit constants K(0) to K(63) for each round.  
+- **Input:** 7-bit round index.  
+- **Output:** Corresponding constant.
+
+
+
+### 6. SHA-256 Functions
+**Module: `sha_256_functions`**  
+- Implements critical logical operations:
+  - **Ch** (Choice): `(x & y) ^ (~x & z)`
+  - **Maj** (Majority): `(x & y) ^ (y & z) ^ (z & x)`
+  - **sigma0**: A transformation of `x` using bit rotations and XOR.
+  - **sigma1**: Another transformation of `x` with different bit rotations and XOR.
+
+
+### 7. Hash Visualization
+**Module: `seven_segment_display_driver`**  
+- Displays the first 8 hexadecimal characters of the 256-bit hash on 7-segment LEDs.  
+- **Input:** 
+  - 4-bit value (`value`) from the hash.  
+  - Signal (`rounds_done`) indicating computation completion.  
+- **Output:** Activates LED segments to represent the hexadecimal values (0-9, A-F).  
+
+
+### 8. Integration
+**Module: `sha_256`**  
+- Combines all modules to implement end-to-end SHA-256 functionality.  
+- **Workflow:**
+  1. Accepts string input, decodes it, and pads it using `decoder_input`.
+  2. Generates 64 32-bit words using `sha_256_message_scheduler`.
+  3. Performs 64 rounds of computation with `sha_256_round`.
+  4. Displays the first 8 characters of the hash on 7-segment LEDs using `seven_segment_display_driver`.
+
+## **Key Features**
+
+1. **Hardware-Optimized:** Designed for efficient FPGA implementation.
+2. **High Modularity:** Independent modules for ease of debugging and reusability.
+3. **Real-Time Visualization:** Displays hash output dynamically on 7-segment LEDs.
+
+## **Future Enhancements**
+- Extend functionality to support multiple 512-bit blocks for larger inputs.
+- Implement additional cryptographic hash algorithms (e.g., SHA-3).
+- Optimize hardware usage for lower power consumption and higher speed.
+## **Example**
+
+- **Input:** `abc@123`
+- **Output:** `e5857b335afdf35ca81a110bc81f38682f8a89892cc597f5398dfef82d42b513`
+
+## **Output Waveform**
+
+- We have given the input : `abc@123`  
+  (i.e.000000(a),000001(b),000010(c),100101(@),011011(1),011100(2),011101(3) input to the decoder )
+
+![App Screenshot](https://github.com/itsharshschoice/Hardware-Implementation-of-SHA-256-for-Secure-Hashing-on-FPGA/blob/main/input.png?raw=true)
+
+- We get the 256 bit hash output :
+  `e5857b335afdf35ca81a110bc81f38682f8a89892cc597f5398dfef82d42b513`
+
+![App Screenshot](https://github.com/itsharshschoice/Hardware-Implementation-of-SHA-256-for-Secure-Hashing-on-FPGA/blob/main/output.png?raw=true)
+## **RTL**
+
+![App Screenshot](https://github.com/itsharshschoice/Hardware-Implementation-of-SHA-256-for-Secure-Hashing-on-FPGA/blob/main/RTL.png?raw=true)
+## **Conclusion**
+
+This project provides an efficient hardware-based implementation of the SHA-256 algorithm. The integration of key modules demonstrates the ability to process input data, schedule messages, execute rounds, and display the final hash value in real-time using FPGA-based hardware.
