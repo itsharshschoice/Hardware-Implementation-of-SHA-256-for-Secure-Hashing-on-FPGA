@@ -124,27 +124,53 @@ This project demonstrates the hardware implementation of the SHA-256 cryptograph
 - Extend functionality to support multiple 512-bit blocks for larger inputs.
 - Implement additional cryptographic hash algorithms (e.g., SHA-3).
 - Optimize hardware usage for lower power consumption and higher speed.
+
+## **RTL Design**
+
+- The RTL consists of several modules. First of all, the input goes to `decoder_input`, and then after padding it goes to the `sha_256_round` module for round calculations. The first 32 bits (8 hex characters) of the final hash value are displayed on eight seven segment displays via the `seven_segment_display_driver` modules.
+
+![RTL Screenshot](https://github.com/itsharshschoice/Hardware-Implementation-of-SHA-256-for-Secure-Hashing-on-FPGA/blob/main/Screenshots/RTL.png?raw=true)
+
 ## **Example**
 
 - **Input:** `abc@123`
 - **Output:** `e5857b335afdf35ca81a110bc81f38682f8a89892cc597f5398dfef82d42b513`
 
-## **Output Waveform**
 
-- We have given the input : `abc@123`  
-  (i.e.000000(a),000001(b),000010(c),100101(@),011011(1),011100(2),011101(3) input to the decoder )
+## **Input Given**
 
-![App Screenshot](https://github.com/itsharshschoice/Hardware-Implementation-of-SHA-256-for-Secure-Hashing-on-FPGA/blob/main/Screenshots/input.png?raw=true)
+- We have given the input: `abc@123`  
+  (i.e., `000000 (a), 000001 (b), 000010 (c), 100101 (@), 011011 (1), 011100 (2), 011101 (3)` to the decoder)
 
-- We get the 256 bit hash output :
+![Input Screenshot](https://github.com/itsharshschoice/Hardware-Implementation-of-SHA-256-for-Secure-Hashing-on-FPGA/blob/main/Screenshots/input.png?raw=true)
+
+
+## **Output from Simulation**
+
+- We get the 256-bit hash output:  
   `e5857b335afdf35ca81a110bc81f38682f8a89892cc597f5398dfef82d42b513`
 
-![App Screenshot](https://github.com/itsharshschoice/Hardware-Implementation-of-SHA-256-for-Secure-Hashing-on-FPGA/blob/main/Screenshots/output.png?raw=true)
-## **RTL**
+![Simulation Output](https://github.com/itsharshschoice/Hardware-Implementation-of-SHA-256-for-Secure-Hashing-on-FPGA/blob/main/Screenshots/output.png?raw=true)
 
-- The RTL consists of several modules. First of all the input goes to `decoder_input`, and then after padding it goes to `sha_256_round` module for round calculations and the first 32 bits (8 hex characters) of the final hash value is displayed on eight seven segment displays via `seven_segment_display_driver` modules.
 
-![App Screenshot](https://github.com/itsharshschoice/Hardware-Implementation-of-SHA-256-for-Secure-Hashing-on-FPGA/blob/main/Screenshots/RTL.png?raw=true)
+## **FPGA Output on 7-Segment Display**
+
+- The first 8 hexadecimal characters (32 bits) of the hash are displayed on the FPGA’s 7-segment displays:  
+  `e5857b33`
+
+![FPGA Output](https://github.com/itsharshschoice/Hardware-Implementation-of-SHA-256-for-Secure-Hashing-on-FPGA/blob/main/Screenshots/FPGA%20Output.jpg?raw=true)
+
+
+## **Reference Output from Website**
+
+- The output is verified against an online SHA-256 calculator at [sha256algorithm.com](https://sha256algorithm.com), confirming the correctness of the hash.
+
+![Website Output](https://github.com/itsharshschoice/Hardware-Implementation-of-SHA-256-for-Secure-Hashing-on-FPGA/blob/main/Screenshots/sha256%20Algorithm%20Website.png?raw=true)
+
+> **Reference Source:** [sha256algorithm.com](https://sha256algorithm.com)  
+> *Screenshot used for educational and demonstration purposes only.*
+
+
 ## **Conclusion**
 
 This project provides an efficient hardware-based implementation of the SHA-256 algorithm. The integration of key modules demonstrates the ability to process input data, schedule messages, execute rounds, and display the final hash value in real-time using FPGA-based hardware.
